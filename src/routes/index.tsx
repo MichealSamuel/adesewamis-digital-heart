@@ -1,24 +1,353 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useCallback, useEffect, useState } from "react";
+import confetti from "canvas-confetti";
+import { Ambient, CursorSparkles } from "@/components/birthday/Ambient";
+import { Loader } from "@/components/birthday/Loader";
+import { Reveal } from "@/components/birthday/Reveal";
+import { MusicToggle } from "@/components/birthday/MusicToggle";
+import { VideoModal } from "@/components/birthday/VideoModal";
+import photo1 from "@/assets/photo1.jpg.asset.json";
+import photo2 from "@/assets/photo2.jpg.asset.json";
+import funnyVideo from "@/assets/funny.mp4.asset.json";
+import futureArt from "@/assets/future.jpg";
 
-// No head() here: the home route inherits title/description/og/twitter from
-// __root.tsx, and ships no og:image so serve-time hosting can inject the
-// project's social preview (explicit og:image or latest screenshot).
 export const Route = createFileRoute("/")({
-  component: Index,
+  head: () => ({
+    meta: [
+      { title: "Happy Birthday, Adesewami — A Little Gift From Me" },
+      {
+        name: "description",
+        content:
+          "A digital love letter for Adesewami: our little story, the things you probably don't know, our memories and an open message for your birthday.",
+      },
+      { property: "og:title", content: "Happy Birthday, Adesewami 🤍" },
+      {
+        property: "og:description",
+        content: "Something more than a birthday message — a keepsake you'll always have.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+    ],
+  }),
+  component: Birthday,
 });
 
-// IMPORTANT: Replace this placeholder. See ./README.md for routing conventions.
-function Index() {
+const STORY = [
+  { icon: "✨", title: "The first conversation", text: "Two strangers, one message — and somehow the night disappeared." },
+  { icon: "✨", title: 'The first "My Baby"', text: "Two small words that quietly changed everything." },
+  { icon: "✨", title: "Every random laugh", text: "The ones that show up out of nowhere and stay all day." },
+  { icon: "✨", title: "Every little moment", text: "The tiny ones nobody else would notice. I noticed all of them." },
+  { icon: "🤍", title: "Today", text: "Happy Birthday ❤️" },
+];
+
+const SECRETS = [
+  "You became one of the safest people in my life.",
+  "Even when we're not talking, you're still on my mind.",
+  "You've made ordinary days feel special.",
+  "Thank you for simply being you.",
+  "You mean more to me than you probably realise.",
+];
+
+const FUTURE = [
+  "We'll celebrate your birthday together.",
+  "I'll finally get all those hugs you still owe me.",
+  "We'll look back at this site and smile.",
+  "I'll still choose you.",
+];
+
+function burst() {
+  const colors = ["#FADADD", "#F6E7C1", "#E7D8F5", "#FFFFFF", "#E8B4A0"];
+  confetti({ particleCount: 90, spread: 78, origin: { y: 0.6 }, colors, scalar: 0.9 });
+  setTimeout(() => confetti({ particleCount: 60, angle: 60, spread: 65, origin: { x: 0 }, colors }), 220);
+  setTimeout(() => confetti({ particleCount: 60, angle: 120, spread: 65, origin: { x: 1 }, colors }), 340);
+}
+
+function Birthday() {
+  const [loading, setLoading] = useState(true);
+  const [opened, setOpened] = useState(false);
+  const [videoOpen, setVideoOpen] = useState(false);
+
+  const finishLoad = useCallback(() => setLoading(false), []);
+
+  useEffect(() => {
+    if (!loading) setTimeout(burst, 400);
+  }, [loading]);
+
+  const openGift = () => {
+    setOpened(true);
+    burst();
+    setTimeout(() => document.getElementById("story")?.scrollIntoView({ behavior: "smooth" }), 500);
+  };
+
   return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
+    <>
+      {loading && <Loader onDone={finishLoad} />}
+      <Ambient />
+      <CursorSparkles />
+      <MusicToggle />
+      <VideoModal open={videoOpen} onClose={() => setVideoOpen(false)} />
+
+      <main
+        className="relative z-10"
+        style={{
+          opacity: loading ? 0 : 1,
+          transition: "opacity 1200ms ease",
+        }}
+      >
+        {/* Hero */}
+        <section className="mx-auto flex min-h-[100svh] max-w-3xl flex-col items-center justify-center px-6 text-center">
+          <Reveal>
+            <p className="mb-6 text-[11px] uppercase tracking-[0.42em] text-foreground/45">
+              26 · a little gift
+            </p>
+            <h1 className="font-display text-[2.7rem] leading-[1.05] sm:text-7xl">
+              Happy Birthday,
+              <span className="block text-gold">Adesewami 🤍</span>
+            </h1>
+            <p className="mx-auto mt-8 max-w-md text-[15px] leading-relaxed text-foreground/65">
+              I wanted to give you something more than just another birthday message...
+              <span className="mt-2 block">So I built you something you'll always have.</span>
+            </p>
+            <button
+              onClick={openGift}
+              className="glow-ring mt-12 rounded-full px-14 py-4 font-display text-xl tracking-wide text-primary-foreground transition-transform duration-500 hover:scale-105 active:scale-95"
+              style={{ background: "linear-gradient(120deg, var(--primary), var(--gold))" }}
+            >
+              {opened ? "Keep scrolling 🤍" : "Open"}
+            </button>
+            <p className="mt-14 animate-bounce text-xl text-primary/40">↓</p>
+          </Reveal>
+        </section>
+
+        {/* Story */}
+        <Section id="story" eyebrow="chapter one" title="Our Little Story">
+          <div className="relative mx-auto max-w-2xl pl-8 sm:pl-12">
+            <div className="absolute left-2 top-2 h-full w-px bg-gradient-to-b from-primary/40 via-gold/40 to-transparent sm:left-3" />
+            {STORY.map((s, i) => (
+              <Reveal key={s.title} delay={i * 80}>
+                <div className="relative mb-6">
+                  <span className="absolute -left-[26px] top-7 size-2.5 rounded-full bg-gold shadow-[0_0_12px_var(--gold)] sm:-left-[38px]" />
+                  <article className="glass rounded-3xl p-6 transition-transform duration-500 hover:-translate-y-1">
+                    <p className="text-lg">{s.icon}</p>
+                    <h3 className="mt-1 font-display text-2xl">{s.title}</h3>
+                    <p className="mt-2 text-sm leading-relaxed text-foreground/60">{s.text}</p>
+                  </article>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+        </Section>
+
+        {/* Flip cards */}
+        <Section eyebrow="chapter two" title="Things You Probably Don't Know" subtitle="Tap a card.">
+          <div className="mx-auto grid max-w-3xl gap-5 sm:grid-cols-2">
+            {SECRETS.map((s, i) => (
+              <Reveal key={s} delay={i * 70}>
+                <FlipCard index={i + 1} text={s} />
+              </Reveal>
+            ))}
+          </div>
+        </Section>
+
+        {/* Memories */}
+        <Section eyebrow="chapter three" title="Memories" subtitle="A few pieces of you I keep.">
+          <div className="mx-auto flex max-w-lg flex-col gap-10">
+            <Reveal>
+              <Polaroid src={photo1.url} caption="That smile. Exhibit A." />
+            </Reveal>
+            <Reveal delay={80}>
+              <Polaroid src={photo2.url} caption="Exhibit B. Still unfair." />
+            </Reveal>
+            <Reveal delay={120}>
+              <div className="glass rotate-[-1deg] rounded-[26px] p-3 transition-transform duration-500 hover:rotate-0 hover:-translate-y-1.5">
+                <video
+                  src={funnyVideo.url}
+                  controls
+                  playsInline
+                  preload="metadata"
+                  className="w-full rounded-[18px] bg-foreground/5"
+                />
+                <div className="px-3 pb-3 pt-5 text-center">
+                  <p className="font-display text-xl">It wasn't my fault that day 😂❤️</p>
+                  <p className="mt-1 text-xs text-foreground/55">
+                    Don't worry... I'll never let you forget this day.
+                  </p>
+                </div>
+              </div>
+            </Reveal>
+            <Reveal delay={160}>
+              <div className="glass flex aspect-[4/5] flex-col items-center justify-center rounded-[26px] border-2 border-dashed border-primary/30 p-6 text-center">
+                <p className="font-display text-2xl text-primary/70">Photo Placeholder 3</p>
+                <p className="mt-2 max-w-[15rem] text-xs leading-relaxed text-foreground/55">
+                  Send me one more photo and it drops right here — same polaroid frame as the others.
+                </p>
+              </div>
+            </Reveal>
+          </div>
+        </Section>
+
+        {/* Future */}
+        <Section eyebrow="chapter four" title="One Day...">
+          <Reveal>
+            <img
+              src={futureArt}
+              alt="Two silhouettes reaching for each other under a starry sky"
+              width={1280}
+              height={800}
+              loading="lazy"
+              className="mx-auto mb-10 w-full max-w-xl rounded-[28px] opacity-90 mix-blend-multiply"
+            />
+          </Reveal>
+          <div className="mx-auto grid max-w-3xl gap-5 sm:grid-cols-2">
+            {FUTURE.map((f, i) => (
+              <Reveal key={f} delay={i * 80}>
+                <div className="glass h-full rounded-3xl p-7 transition-transform duration-500 hover:-translate-y-1">
+                  <p className="font-script text-sm tracking-widest text-gold">One day...</p>
+                  <p className="mt-3 font-display text-2xl leading-snug">{f}</p>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+        </Section>
+
+        {/* Letter */}
+        <Section eyebrow="chapter five" title="An Open Message To My World 🌍 ❤️">
+          <Reveal>
+            <article
+              className="mx-auto max-w-xl rounded-[30px] p-9 sm:p-14"
+              style={{
+                background: "linear-gradient(165deg, oklch(0.995 0.008 88), oklch(0.97 0.02 350))",
+                boxShadow: "var(--shadow-soft)",
+              }}
+            >
+              <div className="space-y-6 font-display text-2xl leading-relaxed text-foreground/85 sm:text-[1.7rem]">
+                <p>Happy Birthday, babe 😗💕</p>
+                <p>My baby's finally 18 😂 ❤️</p>
+                <p>4month and still counting, can't wait to see you 😭</p>
+                <p className="text-gold">I love you. ❤️</p>
+              </div>
+              <div className="mt-10 h-px bg-gradient-to-r from-transparent via-gold/50 to-transparent" />
+              <p className="mt-6 text-right font-script text-lg text-foreground/60">— Me 🙂💍❤️</p>
+            </article>
+          </Reveal>
+        </Section>
+
+        {/* Hidden surprise */}
+        <div className="flex justify-center px-6 pb-24">
+          <Reveal>
+            <button
+              onClick={() => {
+                setVideoOpen(true);
+                burst();
+              }}
+              className="rounded-full border border-dashed border-primary/40 px-6 py-2.5 text-xs tracking-wide text-foreground/45 transition-all hover:scale-105 hover:text-primary"
+            >
+              Don't press this 👀
+            </button>
+          </Reveal>
+        </div>
+
+        {/* Ending */}
+        <section className="mx-auto max-w-2xl px-6 pb-24 text-center">
+          <Reveal>
+            <h2 className="font-display text-4xl leading-tight sm:text-6xl">
+              Happy Birthday, <span className="text-gold">Adesewa.</span>
+            </h2>
+            <p className="mx-auto mt-8 max-w-lg text-[15px] leading-loose text-foreground/65">
+              I pray this new year brings you peace, joy, favour, answered prayers and endless
+              reasons to smile.
+            </p>
+            <p className="mx-auto mt-5 max-w-lg text-[15px] leading-loose text-foreground/65">
+              Thank you for being one of the most special people in my life.
+            </p>
+            <p className="mt-8 font-display text-3xl">I love you.</p>
+            <p className="mt-4 text-3xl text-primary" style={{ animation: "breathe 3s ease-in-out infinite" }}>
+              ❤️
+            </p>
+            <p className="mt-8 font-script text-lg text-foreground/60">— Your Man "Me 🙂💍❤️"</p>
+          </Reveal>
+        </section>
+
+        <footer className="pb-14 text-center text-[11px] tracking-[0.3em] text-foreground/40 uppercase">
+          Made with love. <span className="block mt-2">Especially for Adesewa.</span>
+        </footer>
+      </main>
+    </>
+  );
+}
+
+function Section({
+  id,
+  eyebrow,
+  title,
+  subtitle,
+  children,
+}: {
+  id?: string;
+  eyebrow: string;
+  title: string;
+  subtitle?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section id={id} className="px-6 py-20 sm:py-28">
+      <Reveal>
+        <header className="mx-auto mb-12 max-w-2xl text-center">
+          <p className="text-[10px] uppercase tracking-[0.42em] text-gold">{eyebrow}</p>
+          <h2 className="mt-3 font-display text-4xl sm:text-5xl">{title}</h2>
+          {subtitle && <p className="mt-3 text-sm text-foreground/55">{subtitle}</p>}
+        </header>
+      </Reveal>
+      {children}
+    </section>
+  );
+}
+
+function FlipCard({ text, index }: { text: string; index: number }) {
+  const [flipped, setFlipped] = useState(false);
+  return (
+    <button
+      onClick={() => setFlipped((f) => !f)}
+      className="h-44 w-full [perspective:1200px]"
+      aria-label="Reveal message"
     >
+      <div
+        className="relative h-full w-full transition-transform duration-700 [transform-style:preserve-3d]"
+        style={{ transform: flipped ? "rotateY(180deg)" : "none" }}
+      >
+        <div className="glass absolute inset-0 flex flex-col items-center justify-center rounded-3xl [backface-visibility:hidden]">
+          <span className="font-display text-4xl text-primary/70">❤</span>
+          <span className="mt-2 text-[10px] uppercase tracking-[0.3em] text-foreground/40">
+            No. {index}
+          </span>
+        </div>
+        <div
+          className="absolute inset-0 flex items-center justify-center rounded-3xl px-7 text-center [backface-visibility:hidden]"
+          style={{
+            transform: "rotateY(180deg)",
+            background: "linear-gradient(150deg, oklch(0.97 0.03 350), oklch(0.96 0.035 300))",
+            boxShadow: "var(--shadow-soft)",
+          }}
+        >
+          <p className="font-display text-xl leading-snug">{text}</p>
+        </div>
+      </div>
+    </button>
+  );
+}
+
+function Polaroid({ src, caption }: { src: string; caption: string }) {
+  return (
+    <figure className="glass rotate-[1.2deg] rounded-[26px] p-3 transition-all duration-500 hover:rotate-0 hover:-translate-y-1.5">
       <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
+        src={src}
+        alt={caption}
+        loading="lazy"
+        className="aspect-[4/5] w-full rounded-[18px] object-cover"
       />
-    </div>
+      <figcaption className="px-3 pb-2 pt-5 text-center font-script text-base text-foreground/65">
+        {caption}
+      </figcaption>
+    </figure>
   );
 }
