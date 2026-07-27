@@ -7,12 +7,18 @@ import { Reveal } from "@/components/birthday/Reveal";
 import { MusicToggle } from "@/components/birthday/MusicToggle";
 import { VideoModal } from "@/components/birthday/VideoModal";
 import { CleanVideo } from "@/components/birthday/CleanVideo";
-import photo1 from "@/assets/photo1.jpg.asset.json";
-import photo2 from "@/assets/photo2.jpg.asset.json";
-import photo3 from "@/assets/photo3.jpg.asset.json";
-import funnyVideo from "@/assets/funny.mp4.asset.json";
-import memory2Video from "@/assets/memory2.mp4.asset.json";
+import { sfx, unlockSfx } from "@/lib/sfx";
 import futureArt from "@/assets/future.jpg";
+
+/** Served from /public/media so they work on any host (Lovable, Vercel, etc). */
+const MEDIA = {
+  photo1: "/media/photo1.jpg",
+  photo2: "/media/photo2.jpg",
+  photo3: "/media/photo3.jpg",
+  funny: "/media/funny.mp4",
+  memory2: "/media/memory2.mp4",
+};
+
 
 
 export const Route = createFileRoute("/")({
@@ -73,15 +79,36 @@ function Birthday() {
 
   const finishLoad = useCallback(() => setLoading(false), []);
 
+  // Browsers only allow audio after a gesture — unlock on the first interaction.
   useEffect(() => {
-    if (!loading) setTimeout(burst, 400);
+    const unlock = () => unlockSfx();
+    const opts = { once: true, passive: true } as const;
+    window.addEventListener("pointerdown", unlock, opts);
+    window.addEventListener("touchstart", unlock, opts);
+    window.addEventListener("keydown", unlock, { once: true });
+    return () => {
+      window.removeEventListener("pointerdown", unlock);
+      window.removeEventListener("touchstart", unlock);
+      window.removeEventListener("keydown", unlock);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (loading) return;
+    const t = setTimeout(() => {
+      burst();
+      sfx.sparkle();
+    }, 400);
+    return () => clearTimeout(t);
   }, [loading]);
 
   const openGift = () => {
     setOpened(true);
     burst();
+    sfx.sparkle();
     setTimeout(() => document.getElementById("story")?.scrollIntoView({ behavior: "smooth" }), 500);
   };
+
 
   return (
     <>
@@ -157,25 +184,26 @@ function Birthday() {
         <Section eyebrow="chapter three" title="Memories" subtitle="A few pieces of you I keep.">
           <div className="mx-auto flex max-w-lg flex-col gap-10">
             <Reveal>
-              <Polaroid src={photo1.url} caption="That smile. Exhibit A." />
+              <Polaroid src={MEDIA.photo1} caption="That smile. Exhibit A." />
             </Reveal>
             <Reveal delay={80}>
-              <Polaroid src={photo2.url} caption="Exhibit B. Still unfair." />
+              <Polaroid src={MEDIA.photo2} caption="Exhibit B. Still unfair." />
             </Reveal>
             <Reveal delay={120}>
               <VideoPolaroid
-                src={funnyVideo.url}
+                src={MEDIA.funny}
                 title="It wasn't my fault that day 😂❤️"
                 caption="Don't worry... I'll never let you forget this day."
                 label="the funny memory"
               />
             </Reveal>
             <Reveal delay={160}>
-              <Polaroid src={photo3.url} caption="Exhibit C. My favourite face 🥺" />
+              <Polaroid src={MEDIA.photo3} caption="Exhibit C. My favourite face 🥺" />
             </Reveal>
             <Reveal delay={200}>
               <VideoPolaroid
-                src={memory2Video.url}
+                src={MEDIA.memory2}
+
                 title="Another one I kept 🤍"
                 caption="Press play — it still makes me smile."
                 label="another memory"
@@ -237,7 +265,9 @@ function Birthday() {
             <button
               onClick={() => {
                 setVideoOpen(true);
+                sfx.chime();
                 burst();
+
               }}
               className="rounded-full border border-dashed border-primary/40 px-6 py-2.5 text-xs tracking-wide text-foreground/45 transition-all hover:scale-105 hover:text-primary"
             >
@@ -306,7 +336,11 @@ function FlipCard({ text, index }: { text: string; index: number }) {
   const [flipped, setFlipped] = useState(false);
   return (
     <button
-      onClick={() => setFlipped((f) => !f)}
+      onClick={() => {
+        sfx.flip();
+        setFlipped((f) => !f);
+      }}
+
       className="h-44 w-full [perspective:1200px]"
       aria-label="Reveal message"
     >

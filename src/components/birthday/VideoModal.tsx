@@ -1,8 +1,9 @@
 import { useEffect } from "react";
 import { X } from "lucide-react";
 import { CleanVideo } from "./CleanVideo";
-import funnyVideo from "@/assets/funny.mp4.asset.json";
+import { sfx } from "@/lib/sfx";
 
+const FUNNY_VIDEO = "/media/funny.mp4";
 
 export function VideoModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   useEffect(() => {
@@ -19,12 +20,17 @@ export function VideoModal({ open, onClose }: { open: boolean; onClose: () => vo
 
   if (!open) return null;
 
+  const close = () => {
+    sfx.close();
+    onClose();
+  };
+
   return (
     <div
       className="fixed inset-0 z-[90] flex items-center justify-center px-4 py-10"
       role="dialog"
       aria-modal="true"
-      onClick={onClose}
+      onClick={close}
       style={{ animation: "fade-in 400ms ease" }}
     >
       <div className="absolute inset-0 bg-foreground/55 backdrop-blur-md" />
@@ -34,14 +40,14 @@ export function VideoModal({ open, onClose }: { open: boolean; onClose: () => vo
         style={{ animation: "enter 600ms cubic-bezier(.16,1,.3,1)" }}
       >
         <button
-          onClick={onClose}
+          onClick={close}
           aria-label="Close"
           className="absolute right-5 top-5 z-10 rounded-full bg-card/80 p-2 text-foreground/70 transition hover:text-primary"
         >
           <X className="size-4" />
         </button>
         <CleanVideo
-          src={funnyVideo.url}
+          src={FUNNY_VIDEO}
           autoPlay
           label="the surprise video"
           className="rounded-2xl"
