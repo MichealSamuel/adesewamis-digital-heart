@@ -34,9 +34,11 @@
   --color-gold: var(--gold);
   --color-lavender: var(--lavender);
   --color-cream: var(--cream);
-  --font-display: "Cormorant Garamond", Georgia, serif;
-  --font-script: "Petit Formal Script", cursive;
-  --font-sans: "Karla", ui-sans-serif, system-ui, sans-serif;
+  --font-emoji: "Apple Color Emoji", "Yos_moji", "Noto Color Emoji", "Segoe UI Emoji", sans-serif;
+  --font-display: "Cormorant Garamond", Georgia, serif, "Apple Color Emoji", "Noto Color Emoji";
+  --font-script: "Petit Formal Script", cursive, "Apple Color Emoji", "Noto Color Emoji";
+  --font-sans: "Karla", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Noto Color Emoji";
+
 }
 
 :root {
