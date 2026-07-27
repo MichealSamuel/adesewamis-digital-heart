@@ -163,30 +163,25 @@ function Birthday() {
               <Polaroid src={photo2.url} caption="Exhibit B. Still unfair." />
             </Reveal>
             <Reveal delay={120}>
-              <div className="glass rotate-[-1deg] rounded-[26px] p-3 transition-transform duration-500 hover:rotate-0 hover:-translate-y-1.5">
-                <video
-                  src={funnyVideo.url}
-                  controls
-                  playsInline
-                  preload="metadata"
-                  className="w-full rounded-[18px] bg-foreground/5"
-                />
-                <div className="px-3 pb-3 pt-5 text-center">
-                  <p className="font-display text-xl">It wasn't my fault that day 😂❤️</p>
-                  <p className="mt-1 text-xs text-foreground/55">
-                    Don't worry... I'll never let you forget this day.
-                  </p>
-                </div>
-              </div>
+              <VideoPolaroid
+                src={funnyVideo.url}
+                title="It wasn't my fault that day 😂❤️"
+                caption="Don't worry... I'll never let you forget this day."
+                label="the funny memory"
+              />
             </Reveal>
             <Reveal delay={160}>
-              <div className="glass flex aspect-[4/5] flex-col items-center justify-center rounded-[26px] border-2 border-dashed border-primary/30 p-6 text-center">
-                <p className="font-display text-2xl text-primary/70">Photo Placeholder 3</p>
-                <p className="mt-2 max-w-[15rem] text-xs leading-relaxed text-foreground/55">
-                  Send me one more photo and it drops right here — same polaroid frame as the others.
-                </p>
-              </div>
+              <Polaroid src={photo3.url} caption="Exhibit C. My favourite face 🥺" />
             </Reveal>
+            <Reveal delay={200}>
+              <VideoPolaroid
+                src={memory2Video.url}
+                title="Another one I kept 🤍"
+                caption="Press play — it still makes me smile."
+                label="another memory"
+              />
+            </Reveal>
+
           </div>
         </Section>
 
