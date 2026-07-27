@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { sfx } from "@/lib/sfx";
 
 const LINES = [
   "Some people become part of your story without even trying...",
@@ -20,6 +21,7 @@ export function Loader({ onDone }: { onDone: () => void }) {
     const iv = setInterval(() => {
       i += 1;
       setTyped(line.slice(0, i));
+      if (line[i - 1] !== " ") sfx.type();
       if (i >= line.length) {
         clearInterval(iv);
         setTimeout(() => setStep((s) => s + 1), 1600);
