@@ -350,3 +350,25 @@ function Polaroid({ src, caption }: { src: string; caption: string }) {
     </figure>
   );
 }
+
+function VideoPolaroid({
+  src,
+  title,
+  caption,
+  label,
+}: {
+  src: string;
+  title: string;
+  caption: string;
+  label: string;
+}) {
+  return (
+    <figure className="glass rotate-[-1deg] rounded-[26px] p-3 transition-transform duration-500 hover:rotate-0 hover:-translate-y-1.5">
+      <CleanVideo src={src} label={label} className="rounded-[18px]" />
+      <figcaption className="px-3 pb-3 pt-5 text-center">
+        <p className="font-display text-xl">{title}</p>
+        <p className="mt-1 text-xs text-foreground/55">{caption}</p>
+      </figcaption>
+    </figure>
+  );
+}
