@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Play, Pause } from "lucide-react";
+import { sfx } from "@/lib/sfx";
 
 /**
  * Minimal video player: always muted, no native chrome,
@@ -29,8 +30,13 @@ export function CleanVideo({
   const toggle = () => {
     const v = ref.current;
     if (!v) return;
-    if (v.paused) v.play().catch(() => {});
-    else v.pause();
+    if (v.paused) {
+      sfx.play();
+      v.play().catch(() => {});
+    } else {
+      sfx.pause();
+      v.pause();
+    }
   };
 
   return (
@@ -41,13 +47,13 @@ export function CleanVideo({
         muted
         playsInline
         loop
-        preload="metadata"
+        preload="none"
         disablePictureInPicture
         controlsList="nodownload noplaybackrate noremoteplayback"
         onPlay={() => setPlaying(true)}
         onPause={() => setPlaying(false)}
         onClick={toggle}
-        className="w-full cursor-pointer bg-foreground/5"
+        className="aspect-[9/16] w-full cursor-pointer bg-foreground/5 object-cover"
       />
       <button
         type="button"
