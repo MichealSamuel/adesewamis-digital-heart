@@ -1,6 +1,8 @@
 import { useEffect } from "react";
 import { X } from "lucide-react";
+import { CleanVideo } from "./CleanVideo";
 import funnyVideo from "@/assets/funny.mp4.asset.json";
+
 
 export function VideoModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   useEffect(() => {
