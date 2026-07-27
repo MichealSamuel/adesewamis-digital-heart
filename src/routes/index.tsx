@@ -6,10 +6,14 @@ import { Loader } from "@/components/birthday/Loader";
 import { Reveal } from "@/components/birthday/Reveal";
 import { MusicToggle } from "@/components/birthday/MusicToggle";
 import { VideoModal } from "@/components/birthday/VideoModal";
+import { CleanVideo } from "@/components/birthday/CleanVideo";
 import photo1 from "@/assets/photo1.jpg.asset.json";
 import photo2 from "@/assets/photo2.jpg.asset.json";
+import photo3 from "@/assets/photo3.jpg.asset.json";
 import funnyVideo from "@/assets/funny.mp4.asset.json";
+import memory2Video from "@/assets/memory2.mp4.asset.json";
 import futureArt from "@/assets/future.jpg";
+
 
 export const Route = createFileRoute("/")({
   head: () => ({
