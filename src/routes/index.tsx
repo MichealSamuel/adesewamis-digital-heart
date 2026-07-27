@@ -6,10 +6,14 @@ import { Loader } from "@/components/birthday/Loader";
 import { Reveal } from "@/components/birthday/Reveal";
 import { MusicToggle } from "@/components/birthday/MusicToggle";
 import { VideoModal } from "@/components/birthday/VideoModal";
+import { CleanVideo } from "@/components/birthday/CleanVideo";
 import photo1 from "@/assets/photo1.jpg.asset.json";
 import photo2 from "@/assets/photo2.jpg.asset.json";
+import photo3 from "@/assets/photo3.jpg.asset.json";
 import funnyVideo from "@/assets/funny.mp4.asset.json";
+import memory2Video from "@/assets/memory2.mp4.asset.json";
 import futureArt from "@/assets/future.jpg";
+
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -159,30 +163,25 @@ function Birthday() {
               <Polaroid src={photo2.url} caption="Exhibit B. Still unfair." />
             </Reveal>
             <Reveal delay={120}>
-              <div className="glass rotate-[-1deg] rounded-[26px] p-3 transition-transform duration-500 hover:rotate-0 hover:-translate-y-1.5">
-                <video
-                  src={funnyVideo.url}
-                  controls
-                  playsInline
-                  preload="metadata"
-                  className="w-full rounded-[18px] bg-foreground/5"
-                />
-                <div className="px-3 pb-3 pt-5 text-center">
-                  <p className="font-display text-xl">It wasn't my fault that day 😂❤️</p>
-                  <p className="mt-1 text-xs text-foreground/55">
-                    Don't worry... I'll never let you forget this day.
-                  </p>
-                </div>
-              </div>
+              <VideoPolaroid
+                src={funnyVideo.url}
+                title="It wasn't my fault that day 😂❤️"
+                caption="Don't worry... I'll never let you forget this day."
+                label="the funny memory"
+              />
             </Reveal>
             <Reveal delay={160}>
-              <div className="glass flex aspect-[4/5] flex-col items-center justify-center rounded-[26px] border-2 border-dashed border-primary/30 p-6 text-center">
-                <p className="font-display text-2xl text-primary/70">Photo Placeholder 3</p>
-                <p className="mt-2 max-w-[15rem] text-xs leading-relaxed text-foreground/55">
-                  Send me one more photo and it drops right here — same polaroid frame as the others.
-                </p>
-              </div>
+              <Polaroid src={photo3.url} caption="Exhibit C. My favourite face 🥺" />
             </Reveal>
+            <Reveal delay={200}>
+              <VideoPolaroid
+                src={memory2Video.url}
+                title="Another one I kept 🤍"
+                caption="Press play — it still makes me smile."
+                label="another memory"
+              />
+            </Reveal>
+
           </div>
         </Section>
 
@@ -347,6 +346,28 @@ function Polaroid({ src, caption }: { src: string; caption: string }) {
       />
       <figcaption className="px-3 pb-2 pt-5 text-center font-script text-base text-foreground/65">
         {caption}
+      </figcaption>
+    </figure>
+  );
+}
+
+function VideoPolaroid({
+  src,
+  title,
+  caption,
+  label,
+}: {
+  src: string;
+  title: string;
+  caption: string;
+  label: string;
+}) {
+  return (
+    <figure className="glass rotate-[-1deg] rounded-[26px] p-3 transition-transform duration-500 hover:rotate-0 hover:-translate-y-1.5">
+      <CleanVideo src={src} label={label} className="rounded-[18px]" />
+      <figcaption className="px-3 pb-3 pt-5 text-center">
+        <p className="font-display text-xl">{title}</p>
+        <p className="mt-1 text-xs text-foreground/55">{caption}</p>
       </figcaption>
     </figure>
   );
