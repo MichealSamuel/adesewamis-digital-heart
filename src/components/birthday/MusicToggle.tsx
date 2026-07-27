@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Music, Pause } from "lucide-react";
+import { sfx } from "@/lib/sfx";
 
 /** Soft generated ambient chord pad — no external audio file needed. */
 export function MusicToggle() {
@@ -10,6 +11,7 @@ export function MusicToggle() {
   useEffect(() => () => stopRef.current?.(), []);
 
   const toggle = async () => {
+    sfx.tap();
     if (on) {
       stopRef.current?.();
       stopRef.current = null;
