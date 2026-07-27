@@ -265,7 +265,9 @@ function Birthday() {
             <button
               onClick={() => {
                 setVideoOpen(true);
+                sfx.chime();
                 burst();
+
               }}
               className="rounded-full border border-dashed border-primary/40 px-6 py-2.5 text-xs tracking-wide text-foreground/45 transition-all hover:scale-105 hover:text-primary"
             >
@@ -334,7 +336,11 @@ function FlipCard({ text, index }: { text: string; index: number }) {
   const [flipped, setFlipped] = useState(false);
   return (
     <button
-      onClick={() => setFlipped((f) => !f)}
+      onClick={() => {
+        sfx.flip();
+        setFlipped((f) => !f);
+      }}
+
       className="h-44 w-full [perspective:1200px]"
       aria-label="Reveal message"
     >
