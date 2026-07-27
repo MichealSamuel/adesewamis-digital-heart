@@ -7,12 +7,18 @@ import { Reveal } from "@/components/birthday/Reveal";
 import { MusicToggle } from "@/components/birthday/MusicToggle";
 import { VideoModal } from "@/components/birthday/VideoModal";
 import { CleanVideo } from "@/components/birthday/CleanVideo";
-import photo1 from "@/assets/photo1.jpg.asset.json";
-import photo2 from "@/assets/photo2.jpg.asset.json";
-import photo3 from "@/assets/photo3.jpg.asset.json";
-import funnyVideo from "@/assets/funny.mp4.asset.json";
-import memory2Video from "@/assets/memory2.mp4.asset.json";
+import { sfx, unlockSfx } from "@/lib/sfx";
 import futureArt from "@/assets/future.jpg";
+
+/** Served from /public/media so they work on any host (Lovable, Vercel, etc). */
+const MEDIA = {
+  photo1: "/media/photo1.jpg",
+  photo2: "/media/photo2.jpg",
+  photo3: "/media/photo3.jpg",
+  funny: "/media/funny.mp4",
+  memory2: "/media/memory2.mp4",
+};
+
 
 
 export const Route = createFileRoute("/")({
