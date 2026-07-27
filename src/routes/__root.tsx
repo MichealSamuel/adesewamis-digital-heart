@@ -77,12 +77,16 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Happy Birthday, Adesewami 🤍" },
-      { name: "description", content: "A digital love letter for Adesewami." },
-      { property: "og:title", content: "Happy Birthday, Adesewami 🤍" },
-      { property: "og:description", content: "A digital love letter for Adesewami." },
+      { title: "Happy Birthday, Adesewami — A Little Gift From Me" },
+      { name: "description", content: "A little gift for you babe ❤️" },
+      { property: "og:title", content: "Happy Birthday, Adesewami — A Little Gift From Me" },
+      { property: "og:description", content: "A little gift for you babe ❤️" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "Happy Birthday, Adesewami — A Little Gift From Me" },
+      { name: "twitter:description", content: "A little gift for you babe ❤️" },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/70d18c3b-5861-4599-9139-7e0069aad4c6/id-preview-20064676--ebfcc0a5-6a91-42db-aa20-0b35b1e6c39b.lovable.app-1785110713456.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/70d18c3b-5861-4599-9139-7e0069aad4c6/id-preview-20064676--ebfcc0a5-6a91-42db-aa20-0b35b1e6c39b.lovable.app-1785110713456.png" },
     ],
     links: [
       {

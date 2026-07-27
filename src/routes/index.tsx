@@ -22,12 +22,12 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "A digital love letter for Adesewami: our little story, the things you probably don't know, our memories and an open message for your birthday.",
+          "A little gift for you babe ❤️",
       },
-      { property: "og:title", content: "Happy Birthday, Adesewami 🤍" },
+      { property: "og:title", content: "Happy Birthday, Adesewami — A Little Gift From Me" },
       {
         property: "og:description",
-        content: "Something more than a birthday message — a keepsake you'll always have.",
+        content: "A little gift for you babe ❤️",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
