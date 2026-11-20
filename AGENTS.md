@@ -8,3 +8,5 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+- Store gallery entries in the shared database and uploads in Cloud storage; enforce editing permissions with database roles and storage policies, never with client-side UI state alone.

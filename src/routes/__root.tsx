@@ -77,16 +77,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Happy Birthday, Adesewami — A Little Gift From Me" },
-      { name: "description", content: "A little gift for you babe ❤️" },
-      { property: "og:title", content: "Happy Birthday, Adesewami — A Little Gift From Me" },
-      { property: "og:description", content: "A little gift for you babe ❤️" },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "Happy Birthday, Adesewami — A Little Gift From Me" },
-      { name: "twitter:description", content: "A little gift for you babe ❤️" },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/70d18c3b-5861-4599-9139-7e0069aad4c6/id-preview-20064676--ebfcc0a5-6a91-42db-aa20-0b35b1e6c39b.lovable.app-1785110713456.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/70d18c3b-5861-4599-9139-7e0069aad4c6/id-preview-20064676--ebfcc0a5-6a91-42db-aa20-0b35b1e6c39b.lovable.app-1785110713456.png" },
     ],
     links: [
       {
@@ -97,7 +87,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400&family=Karla:wght@300;400;500&family=Petit+Formal+Script&family=Noto+Color+Emoji&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Space+Mono:wght@400;700&family=Noto+Color+Emoji&display=swap",
       },
       { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
     ],

@@ -1,408 +1,700 @@
+import { useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { useCallback, useEffect, useState } from "react";
-import confetti from "canvas-confetti";
-import { Ambient, CursorSparkles } from "@/components/birthday/Ambient";
-import { Loader } from "@/components/birthday/Loader";
-import { Reveal } from "@/components/birthday/Reveal";
-import { MusicToggle } from "@/components/birthday/MusicToggle";
-import { VideoModal } from "@/components/birthday/VideoModal";
+import {
+  ArrowDown,
+  Camera,
+  Film,
+  ImagePlus,
+  LockKeyhole,
+  LogIn,
+  LogOut,
+  Pencil,
+  Plus,
+  Quote,
+  Sparkles,
+  Trash2,
+  Upload,
+} from "lucide-react";
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { CleanVideo } from "@/components/birthday/CleanVideo";
-import { sfx, unlockSfx } from "@/lib/sfx";
-import futureArt from "@/assets/future.jpg";
-
-/** Served from /public/media so they work on any host (Lovable, Vercel, etc). */
-const MEDIA = {
-  photo1: "/media/photo1.jpg",
-  photo2: "/media/photo2.jpg",
-  photo3: "/media/photo3.jpg",
-  funny: "/media/funny.mp4",
-  memory2: "/media/memory2.mp4",
-};
-
-
+import { lovable } from "@/integrations/lovable";
+import { supabase } from "@/integrations/supabase/client";
+import {
+  memoryEntriesQuery,
+  MEMORY_BUCKET,
+  starterMemories,
+  validateMemoryFile,
+  type MemoryCard,
+  type MemoryKind,
+} from "@/lib/memory-lane";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Happy Birthday, Adesewami — A Little Gift From Me" },
+      { title: "Adesewami’s Memory Lane — Pixel-Art Scrapbook" },
       {
         name: "description",
-        content:
-          "A little gift for you babe ❤️",
+        content: "A tiny pixel-art scrapbook for Adesewami’s favourite photos, videos, and thoughts.",
       },
-      { property: "og:title", content: "Happy Birthday, Adesewami — A Little Gift From Me" },
+      { property: "og:title", content: "Adesewami’s Memory Lane — Pixel-Art Scrapbook" },
       {
         property: "og:description",
-        content: "A little gift for you babe ❤️",
+        content: "A tiny pixel-art scrapbook for Adesewami’s favourite photos, videos, and thoughts.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "Adesewami’s Memory Lane — Pixel-Art Scrapbook" },
+      {
+        name: "twitter:description",
+        content: "A tiny pixel-art scrapbook for Adesewami’s favourite photos, videos, and thoughts.",
+      },
     ],
   }),
-  component: Birthday,
+  loader: ({ context }) => context.queryClient.ensureQueryData(memoryEntriesQuery),
+  component: MemoryLane,
 });
 
-const STORY = [
-  { icon: "✨", title: "The first conversation", text: "Two strangers, one message — and somehow the night disappeared." },
-  { icon: "✨", title: 'The first "My Baby"', text: "Two small words that quietly changed everything." },
-  { icon: "✨", title: "Every random laugh", text: "The ones that show up out of nowhere and stay all day." },
-  { icon: "✨", title: "Every little moment", text: "The tiny ones nobody else would notice. I noticed all of them." },
-  { icon: "🤍", title: "Today", text: "Happy Birthday ❤️" },
+type FilterKind = "all" | MemoryKind;
+
+const filters: { kind: FilterKind; label: string }[] = [
+  { kind: "all", label: "ALL" },
+  { kind: "photo", label: "PHOTOS" },
+  { kind: "video", label: "VIDEOS" },
+  { kind: "thought", label: "THOUGHTS" },
 ];
 
-const SECRETS = [
-  "You became one of the safest people in my life.",
-  "Even when we're not talking, you're still on my mind.",
-  "You've made ordinary days feel special.",
-  "Thank you for simply being you.",
-  "You mean more to me than you probably realise.",
+const kinds: { kind: MemoryKind; label: string; icon: typeof Camera }[] = [
+  { kind: "photo", label: "PHOTO", icon: Camera },
+  { kind: "video", label: "VIDEO", icon: Film },
+  { kind: "thought", label: "THOUGHT", icon: Quote },
 ];
 
-const FUTURE = [
-  "We'll celebrate your birthday together.",
-  "I'll finally get all those hugs you still owe me.",
-  "We'll look back at this site and smile.",
-  "I'll still choose you.",
-];
+function MemoryLane() {
+  const { data: savedData } = useSuspenseQuery(memoryEntriesQuery);
+  const queryClient = useQueryClient();
+  const [filter, setFilter] = useState<FilterKind>("all");
+  const [isOwner, setIsOwner] = useState(false);
+  const [ownerEmail, setOwnerEmail] = useState<string | null>(null);
+  const [authReady, setAuthReady] = useState(false);
+  const [authBusy, setAuthBusy] = useState(false);
+  const [formOpen, setFormOpen] = useState(false);
+  const [editing, setEditing] = useState<MemoryCard | null>(null);
+  const [deleting, setDeleting] = useState<MemoryCard | null>(null);
+  const [kind, setKind] = useState<MemoryKind>("photo");
+  const [title, setTitle] = useState("");
+  const [note, setNote] = useState("");
+  const [file, setFile] = useState<File | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [notice, setNotice] = useState("");
+  const [noticeError, setNoticeError] = useState(false);
 
-function burst() {
-  const colors = ["#FADADD", "#F6E7C1", "#E7D8F5", "#FFFFFF", "#E8B4A0"];
-  confetti({ particleCount: 90, spread: 78, origin: { y: 0.6 }, colors, scalar: 0.9 });
-  setTimeout(() => confetti({ particleCount: 60, angle: 60, spread: 65, origin: { x: 0 }, colors }), 220);
-  setTimeout(() => confetti({ particleCount: 60, angle: 120, spread: 65, origin: { x: 1 }, colors }), 340);
-}
-
-function Birthday() {
-  const [loading, setLoading] = useState(true);
-  const [opened, setOpened] = useState(false);
-  const [videoOpen, setVideoOpen] = useState(false);
-
-  const finishLoad = useCallback(() => setLoading(false), []);
-
-  // Browsers only allow audio after a gesture — unlock on the first interaction.
   useEffect(() => {
-    const unlock = () => unlockSfx();
-    const opts = { once: true, passive: true } as const;
-    window.addEventListener("pointerdown", unlock, opts);
-    window.addEventListener("touchstart", unlock, opts);
-    window.addEventListener("keydown", unlock, { once: true });
+    let active = true;
+
+    const refreshIdentity = async () => {
+      const { data, error } = await supabase.auth.getUser();
+      if (!active) return;
+      if (error || !data.user) {
+        setIsOwner(false);
+        setOwnerEmail(null);
+        setAuthReady(true);
+        return;
+      }
+
+      const { data: role, error: roleError } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", data.user.id)
+        .eq("role", "admin")
+        .maybeSingle();
+      if (!active) return;
+      setOwnerEmail(data.user.email ?? null);
+      setIsOwner(!roleError && role?.role === "admin");
+      setAuthReady(true);
+    };
+
+    void refreshIdentity();
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_OUT") {
+        setIsOwner(false);
+        setOwnerEmail(null);
+      }
+      if (event === "SIGNED_IN" || event === "SIGNED_OUT" || event === "USER_UPDATED") {
+        window.setTimeout(() => void refreshIdentity(), 0);
+      }
+    });
+
     return () => {
-      window.removeEventListener("pointerdown", unlock);
-      window.removeEventListener("touchstart", unlock);
-      window.removeEventListener("keydown", unlock);
+      active = false;
+      subscription.unsubscribe();
     };
   }, []);
 
-  useEffect(() => {
-    if (loading) return;
-    const t = setTimeout(() => {
-      burst();
-      sfx.sparkle();
-    }, 400);
-    return () => clearTimeout(t);
-  }, [loading]);
+  const memories = useMemo(
+    () => [...savedData.entries, ...starterMemories],
+    [savedData.entries],
+  );
+  const visibleMemories = useMemo(
+    () => (filter === "all" ? memories : memories.filter((memory) => memory.kind === filter)),
+    [filter, memories],
+  );
 
-  const openGift = () => {
-    setOpened(true);
-    burst();
-    sfx.sparkle();
-    setTimeout(() => document.getElementById("story")?.scrollIntoView({ behavior: "smooth" }), 500);
+  const openNewMemory = useCallback(() => {
+    setEditing(null);
+    setKind("photo");
+    setTitle("");
+    setNote("");
+    setFile(null);
+    setNotice("");
+    setFormOpen(true);
+  }, []);
+
+  const openEditMemory = useCallback((memory: MemoryCard) => {
+    setEditing(memory);
+    setKind(memory.kind);
+    setTitle(memory.title);
+    setNote(memory.note);
+    setFile(null);
+    setNotice("");
+    setFormOpen(true);
+  }, []);
+
+  const handleOwnerSignIn = async () => {
+    setAuthBusy(true);
+    setNotice("");
+    try {
+      const result = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: window.location.origin,
+      });
+      if (result.error) {
+        setNotice("Google sign-in did not complete. Please try again.");
+        setNoticeError(true);
+        setAuthBusy(false);
+        return;
+      }
+      if (!result.redirected) setAuthBusy(false);
+    } catch {
+      setNotice("Google sign-in did not complete. Please try again.");
+      setNoticeError(true);
+      setAuthBusy(false);
+    }
   };
 
+  const handleSignOut = async () => {
+    await queryClient.cancelQueries();
+    queryClient.clear();
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      setNotice("Could not sign out just yet. Please try again.");
+      setNoticeError(true);
+      return;
+    }
+    setIsOwner(false);
+    setOwnerEmail(null);
+    await queryClient.invalidateQueries({ queryKey: memoryEntriesQuery.queryKey });
+  };
+
+  const handleSave = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const cleanTitle = title.trim();
+    if (!cleanTitle) {
+      setNotice("Give this memory a title first.");
+      setNoticeError(true);
+      return;
+    }
+
+    const fileError = validateMemoryFile(kind, file, Boolean(editing?.mediaPath));
+    if (fileError) {
+      setNotice(fileError);
+      setNoticeError(true);
+      return;
+    }
+
+    setSaving(true);
+    setNotice("");
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+    if (userError || !userData.user) {
+      setNotice("Sign in with the owner account to save a memory.");
+      setNoticeError(true);
+      setSaving(false);
+      return;
+    }
+
+    let uploadedPath: string | null = null;
+    if (file) {
+      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "-").slice(0, 100) || "memory-file";
+      uploadedPath = `${userData.user.id}/${crypto.randomUUID()}-${safeName}`;
+      const { error: uploadError } = await supabase.storage
+        .from(MEMORY_BUCKET)
+        .upload(uploadedPath, file, { contentType: file.type, upsert: false });
+      if (uploadError) {
+        setNotice("That file could not be uploaded. Please try again.");
+        setNoticeError(true);
+        setSaving(false);
+        return;
+      }
+    }
+
+    const mediaPath = kind === "thought" ? null : uploadedPath ?? editing?.mediaPath ?? null;
+    const values = { entry_type: kind, title: cleanTitle, note: note.trim(), media_path: mediaPath };
+    const { error: saveError } = editing
+      ? await supabase.from("memory_entries").update(values).eq("id", editing.id)
+      : await supabase.from("memory_entries").insert({ ...values, created_by: userData.user.id });
+
+    if (saveError) {
+      if (uploadedPath) await supabase.storage.from(MEMORY_BUCKET).remove([uploadedPath]);
+      setNotice("This account cannot save that memory, or the connection was interrupted.");
+      setNoticeError(true);
+      setSaving(false);
+      return;
+    }
+
+    if (editing?.mediaPath && editing.mediaPath !== mediaPath) {
+      await supabase.storage.from(MEMORY_BUCKET).remove([editing.mediaPath]);
+    }
+
+    await queryClient.invalidateQueries({ queryKey: memoryEntriesQuery.queryKey });
+    setFormOpen(false);
+    setSaving(false);
+    setFile(null);
+    setNotice(editing ? "Memory updated." : "Memory added to the scrapbook.");
+    setNoticeError(false);
+  };
+
+  const handleDelete = async () => {
+    if (!deleting) return;
+    const { error } = await supabase.from("memory_entries").delete().eq("id", deleting.id);
+    if (error) {
+      setNotice("This memory could not be removed. Please try again.");
+      setNoticeError(true);
+      return;
+    }
+
+    let fileCleanupFailed = false;
+    if (deleting.mediaPath) {
+      const { error: removeError } = await supabase.storage
+        .from(MEMORY_BUCKET)
+        .remove([deleting.mediaPath]);
+      fileCleanupFailed = Boolean(removeError);
+    }
+
+    await queryClient.invalidateQueries({ queryKey: memoryEntriesQuery.queryKey });
+    setDeleting(null);
+    setNotice(fileCleanupFailed ? "Memory removed. Its old media file could not be cleared." : "Memory removed.");
+    setNoticeError(fileCleanupFailed);
+  };
 
   return (
-    <>
-      {loading && <Loader onDone={finishLoad} />}
-      <Ambient />
-      <CursorSparkles />
-      <MusicToggle />
-      <VideoModal open={videoOpen} onClose={() => setVideoOpen(false)} />
-
-      <main
-        className="relative z-10"
-        style={{
-          opacity: loading ? 0 : 1,
-          transition: "opacity 1200ms ease",
-        }}
-      >
-        {/* Hero */}
-        <section className="mx-auto flex min-h-[100svh] max-w-3xl flex-col items-center justify-center px-6 text-center">
-          <Reveal>
-            <p className="mb-6 text-[11px] uppercase tracking-[0.42em] text-foreground/45">
-              26 · a little gift
-            </p>
-            <h1 className="font-display text-[2.7rem] leading-[1.05] sm:text-7xl">
-              Happy Birthday,
-              <span className="block text-gold">Adesewami 🤍</span>
-            </h1>
-            <p className="mx-auto mt-8 max-w-md text-[15px] leading-relaxed text-foreground/65">
-              I wanted to give you something more than just another birthday message...
-              <span className="mt-2 block">So I built you something you'll always have.</span>
-            </p>
-            <button
-              onClick={openGift}
-              className="glow-ring mt-12 rounded-full px-14 py-4 font-display text-xl tracking-wide text-primary-foreground transition-transform duration-500 hover:scale-105 active:scale-95"
-              style={{ background: "linear-gradient(120deg, var(--primary), var(--gold))" }}
-            >
-              {opened ? "Keep scrolling 🤍" : "Open"}
-            </button>
-            <p className="mt-14 animate-bounce text-xl text-primary/40">↓</p>
-          </Reveal>
-        </section>
-
-        {/* Story */}
-        <Section id="story" eyebrow="chapter one" title="Our Little Story">
-          <div className="relative mx-auto max-w-2xl pl-8 sm:pl-12">
-            <div className="absolute left-2 top-2 h-full w-px bg-gradient-to-b from-primary/40 via-gold/40 to-transparent sm:left-3" />
-            {STORY.map((s, i) => (
-              <Reveal key={s.title} delay={i * 80}>
-                <div className="relative mb-6">
-                  <span className="absolute -left-[26px] top-7 size-2.5 rounded-full bg-gold shadow-[0_0_12px_var(--gold)] sm:-left-[38px]" />
-                  <article className="glass rounded-3xl p-6 transition-transform duration-500 hover:-translate-y-1">
-                    <p className="text-lg">{s.icon}</p>
-                    <h3 className="mt-1 font-display text-2xl">{s.title}</h3>
-                    <p className="mt-2 text-sm leading-relaxed text-foreground/60">{s.text}</p>
-                  </article>
-                </div>
-              </Reveal>
-            ))}
+    <main className="min-h-screen px-4 pb-10 pt-4 text-foreground sm:px-8 sm:pt-7">
+      <div className="mx-auto max-w-7xl">
+        <header className="mb-5 flex flex-wrap items-center justify-between gap-4">
+          <a href="#top" className="group inline-flex items-center gap-3" aria-label="Memory Lane home">
+            <span className="pixel-mark grid size-11 place-items-center text-primary" aria-hidden="true">
+              <Sparkles className="size-5" />
+            </span>
+            <span>
+              <span className="pixel-micro block text-foreground">MEMORY LANE</span>
+              <span className="mt-1 block text-[10px] text-muted-foreground">ADESewami’s scrapbook</span>
+            </span>
+          </a>
+          <div className="flex items-center gap-2">
+            {isOwner ? (
+              <>
+                <span className="hidden items-center gap-2 text-xs text-accent sm:inline-flex">
+                  <LockKeyhole className="size-3.5" /> OWNER MODE
+                </span>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => void handleSignOut()}
+                  className="pixel-action"
+                  aria-label="Sign out of the owner account"
+                >
+                  <LogOut /> <span>Sign out</span>
+                </Button>
+              </>
+            ) : (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => void handleOwnerSignIn()}
+                disabled={authBusy}
+                className="pixel-action"
+                aria-label="Sign in with Google as the gallery owner"
+              >
+                <LogIn /> <span>{authBusy ? "Connecting…" : "Owner sign in"}</span>
+              </Button>
+            )}
           </div>
-        </Section>
-
-        {/* Flip cards */}
-        <Section eyebrow="chapter two" title="Things You Probably Don't Know" subtitle="Tap a card.">
-          <div className="mx-auto grid max-w-3xl gap-5 sm:grid-cols-2">
-            {SECRETS.map((s, i) => (
-              <Reveal key={s} delay={i * 70}>
-                <FlipCard index={i + 1} text={s} />
-              </Reveal>
-            ))}
-          </div>
-        </Section>
-
-        {/* Memories */}
-        <Section eyebrow="chapter three" title="Memories" subtitle="A few pieces of you I keep.">
-          <div className="mx-auto flex max-w-lg flex-col gap-10">
-            <Reveal>
-              <Polaroid src={MEDIA.photo1} caption="That smile. Exhibit A." />
-            </Reveal>
-            <Reveal delay={80}>
-              <Polaroid src={MEDIA.photo2} caption="Exhibit B. Still unfair." />
-            </Reveal>
-            <Reveal delay={120}>
-              <VideoPolaroid
-                src={MEDIA.funny}
-                title="It wasn't my fault that day 😂❤️"
-                caption="Don't worry... I'll never let you forget this day."
-                label="the funny memory"
-              />
-            </Reveal>
-            <Reveal delay={160}>
-              <Polaroid src={MEDIA.photo3} caption="Exhibit C. My favourite face 🥺" />
-            </Reveal>
-            <Reveal delay={200}>
-              <VideoPolaroid
-                src={MEDIA.memory2}
-
-                title="Another one I kept 🤍"
-                caption="Press play — it still makes me smile."
-                label="another memory"
-              />
-            </Reveal>
-
-          </div>
-        </Section>
-
-        {/* Future */}
-        <Section eyebrow="chapter four" title="One Day...">
-          <Reveal>
-            <img
-              src={futureArt}
-              alt="Two silhouettes reaching for each other under a starry sky"
-              width={1280}
-              height={800}
-              loading="lazy"
-              className="mx-auto mb-10 w-full max-w-xl rounded-[28px] opacity-90 mix-blend-multiply"
-            />
-          </Reveal>
-          <div className="mx-auto grid max-w-3xl gap-5 sm:grid-cols-2">
-            {FUTURE.map((f, i) => (
-              <Reveal key={f} delay={i * 80}>
-                <div className="glass h-full rounded-3xl p-7 transition-transform duration-500 hover:-translate-y-1">
-                  <p className="font-script text-sm tracking-widest text-gold">One day...</p>
-                  <p className="mt-3 font-display text-2xl leading-snug">{f}</p>
-                </div>
-              </Reveal>
-            ))}
-          </div>
-        </Section>
-
-        {/* Letter */}
-        <Section eyebrow="chapter five" title="An Open Message To My World 🌍 ❤️">
-          <Reveal>
-            <article
-              className="mx-auto max-w-xl rounded-[30px] p-9 sm:p-14"
-              style={{
-                background: "linear-gradient(165deg, oklch(0.995 0.008 88), oklch(0.97 0.02 350))",
-                boxShadow: "var(--shadow-soft)",
-              }}
-            >
-              <div className="space-y-6 font-display text-2xl leading-relaxed text-foreground/85 sm:text-[1.7rem]">
-                <p>Happy Birthday, babe 😗💕</p>
-                <p>My baby's finally 18 😂 ❤️</p>
-                <p>4month and still counting, can't wait to see you 😭</p>
-                <p className="text-gold">I love you. ❤️</p>
-              </div>
-              <div className="mt-10 h-px bg-gradient-to-r from-transparent via-gold/50 to-transparent" />
-              <p className="mt-6 text-right font-script text-lg text-foreground/60">— Me 🙂💍❤️</p>
-            </article>
-          </Reveal>
-        </Section>
-
-        {/* Hidden surprise */}
-        <div className="flex justify-center px-6 pb-24">
-          <Reveal>
-            <button
-              onClick={() => {
-                setVideoOpen(true);
-                sfx.chime();
-                burst();
-
-              }}
-              className="rounded-full border border-dashed border-primary/40 px-6 py-2.5 text-xs tracking-wide text-foreground/45 transition-all hover:scale-105 hover:text-primary"
-            >
-              Don't press this 👀
-            </button>
-          </Reveal>
-        </div>
-
-        {/* Ending */}
-        <section className="mx-auto max-w-2xl px-6 pb-24 text-center">
-          <Reveal>
-            <h2 className="font-display text-4xl leading-tight sm:text-6xl">
-              Happy Birthday, <span className="text-gold">Adesewa.</span>
-            </h2>
-            <p className="mx-auto mt-8 max-w-lg text-[15px] leading-loose text-foreground/65">
-              I pray this new year brings you peace, joy, favour, answered prayers and endless
-              reasons to smile.
-            </p>
-            <p className="mx-auto mt-5 max-w-lg text-[15px] leading-loose text-foreground/65">
-              Thank you for being one of the most special people in my life.
-            </p>
-            <p className="mt-8 font-display text-3xl">I love you.</p>
-            <p className="mt-4 text-3xl text-primary" style={{ animation: "breathe 3s ease-in-out infinite" }}>
-              ❤️
-            </p>
-            <p className="mt-8 font-script text-lg text-foreground/60">— Your Man "Me 🙂💍❤️"</p>
-          </Reveal>
-        </section>
-
-        <footer className="pb-14 text-center text-[11px] tracking-[0.3em] text-foreground/40 uppercase">
-          Made with love. <span className="block mt-2">Especially for Adesewa.</span>
-        </footer>
-      </main>
-    </>
-  );
-}
-
-function Section({
-  id,
-  eyebrow,
-  title,
-  subtitle,
-  children,
-}: {
-  id?: string;
-  eyebrow: string;
-  title: string;
-  subtitle?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section id={id} className="px-6 py-20 sm:py-28">
-      <Reveal>
-        <header className="mx-auto mb-12 max-w-2xl text-center">
-          <p className="text-[10px] uppercase tracking-[0.42em] text-gold">{eyebrow}</p>
-          <h2 className="mt-3 font-display text-4xl sm:text-5xl">{title}</h2>
-          {subtitle && <p className="mt-3 text-sm text-foreground/55">{subtitle}</p>}
         </header>
-      </Reveal>
-      {children}
-    </section>
+
+        <section id="top" className="pixel-hero pixel-panel mb-10 grid overflow-hidden lg:grid-cols-[1.05fr_0.95fr]">
+          <div className="relative z-10 flex flex-col items-start justify-center p-6 sm:p-10 lg:p-12">
+            <p className="pixel-kicker mb-5 inline-flex items-center gap-2 text-accent">
+              <span className="pixel-blink" aria-hidden="true">■</span> SAVE SLOT 01 / ALWAYS OPEN
+            </p>
+            <h1 className="pixel-title max-w-xl text-[2rem] leading-[1.45] text-primary sm:text-5xl">
+              MEMORY<br />
+              <span className="text-foreground">LANE</span>
+            </h1>
+            <p className="mt-6 max-w-lg font-sans text-sm leading-7 text-muted-foreground sm:text-base">
+              A little world for Adesewami’s favourite faces, funny clips, and thoughts worth keeping.
+            </p>
+            <div className="mt-8 flex flex-wrap items-center gap-3">
+              <Button asChild variant="secondary" className="pixel-action">
+                <a href="#collection">
+                  Open scrapbook <ArrowDown aria-hidden="true" />
+                </a>
+              </Button>
+              {isOwner && (
+                <Button type="button" onClick={openNewMemory} className="pixel-action">
+                  <Plus aria-hidden="true" /> Add a memory
+                </Button>
+              )}
+            </div>
+            <div className="mt-9 flex items-center gap-3 border-t-2 border-border pt-4 font-sans text-[11px] text-muted-foreground">
+              <span className="pixel-dot bg-primary" />
+              <span>{memories.length.toString().padStart(2, "0")} SAVED MOMENTS</span>
+              <span aria-hidden="true">/</span>
+              <span>EST. IN LOVE</span>
+            </div>
+          </div>
+          <figure className="pixel-hero-art relative m-4 min-h-72 overflow-hidden sm:m-6 lg:min-h-[27rem]">
+            <img
+              src="/media/photo3.jpg"
+              alt="Adesewami smiling in a playful selfie"
+              width={720}
+              height={900}
+              fetchPriority="high"
+              className="h-full min-h-72 w-full object-cover object-center"
+            />
+            <div className="pixel-photo-overlay" aria-hidden="true" />
+            <figcaption className="pixel-photo-caption">
+              <span className="pixel-micro">PLAYER ONE</span>
+              <span className="font-sans text-xs">Adesewami · forever my favourite</span>
+            </figcaption>
+            <span className="pixel-photo-stamp pixel-micro" aria-hidden="true">♡ SAVE</span>
+          </figure>
+        </section>
+
+        <section id="collection" className="scroll-mt-6">
+          <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <p className="pixel-kicker text-secondary">FILE SELECT // 001</p>
+              <h2 className="pixel-section-title mt-3 text-foreground">The scrapbook</h2>
+              <p className="mt-3 font-sans text-xs leading-6 text-muted-foreground sm:text-sm">
+                Little moments, kept close.
+              </p>
+            </div>
+            {isOwner && (
+              <Button type="button" onClick={openNewMemory} className="pixel-action">
+                <ImagePlus aria-hidden="true" /> Add memory
+              </Button>
+            )}
+          </div>
+
+          <div className="mb-6 flex flex-col gap-4 border-y-2 border-border py-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-wrap gap-2" aria-label="Filter memories">
+              {filters.map((item) => (
+                <Button
+                  key={item.kind}
+                  type="button"
+                  variant={filter === item.kind ? "default" : "ghost"}
+                  aria-pressed={filter === item.kind}
+                  onClick={() => setFilter(item.kind)}
+                  className="pixel-filter"
+                >
+                  {item.label}
+                </Button>
+              ))}
+            </div>
+            <p className="font-sans text-[11px] text-muted-foreground">
+              {visibleMemories.length.toString().padStart(2, "0")} ITEMS FOUND
+            </p>
+          </div>
+
+          {savedData.hasError && (
+            <p role="status" className="pixel-notice mb-5">
+              Your saved memories couldn’t load just now. The original scrapbook is still here.
+            </p>
+          )}
+          {notice && (
+            <p role={noticeError ? "alert" : "status"} className={`pixel-notice mb-5 ${noticeError ? "pixel-notice-error" : ""}`}>
+              {notice}
+            </p>
+          )}
+
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
+            {visibleMemories.map((memory, index) => (
+              <MemoryTile
+                key={memory.id}
+                memory={memory}
+                index={index}
+                isOwner={isOwner}
+                onEdit={openEditMemory}
+                onDelete={setDeleting}
+              />
+            ))}
+          </div>
+
+          <footer className="mt-10 flex flex-wrap items-center justify-between gap-3 border-t-2 border-border py-5 font-sans text-[10px] text-muted-foreground">
+            <span>END OF TAPE · MORE MOMENTS TO COME</span>
+            <span>MADE WITH A FULL HEART <span className="text-secondary">♥</span></span>
+          </footer>
+        </section>
+      </div>
+
+      <Dialog open={formOpen} onOpenChange={setFormOpen}>
+        <DialogContent className="pixel-dialog border-2 border-foreground bg-card p-0 shadow-[var(--shadow-pixel)] sm:max-w-xl">
+          <DialogHeader className="border-b-2 border-border p-5 pr-12 text-left sm:p-6">
+            <p className="pixel-kicker text-accent">MEMORY EDITOR // SAVE SLOT</p>
+            <DialogTitle className="pixel-section-title mt-3">
+              {editing ? "Edit this moment" : "Add to the scrapbook"}
+            </DialogTitle>
+            <DialogDescription className="font-sans text-xs leading-5 text-muted-foreground">
+              Photos, videos, and little thoughts all belong here.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={(event) => void handleSave(event)} className="space-y-5 p-5 sm:p-6">
+            <fieldset>
+              <legend className="pixel-field-label mb-2">MEMORY TYPE</legend>
+              <div className="grid grid-cols-3 gap-2" role="group" aria-label="Memory type">
+                {kinds.map((option) => {
+                  const Icon = option.icon;
+                  return (
+                    <Button
+                      key={option.kind}
+                      type="button"
+                      variant={kind === option.kind ? "default" : "outline"}
+                      aria-pressed={kind === option.kind}
+                      onClick={() => {
+                        setKind(option.kind);
+                        setFile(null);
+                      }}
+                      className="pixel-action h-12 px-2 text-[10px]"
+                    >
+                      <Icon aria-hidden="true" /> {option.label}
+                    </Button>
+                  );
+                })}
+              </div>
+            </fieldset>
+
+            <div className="space-y-2">
+              <Label htmlFor="memory-title" className="pixel-field-label">TITLE</Label>
+              <Input
+                id="memory-title"
+                value={title}
+                onChange={(event) => setTitle(event.target.value)}
+                maxLength={90}
+                required
+                autoComplete="off"
+                className="pixel-input"
+                placeholder="A moment worth keeping"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="memory-note" className="pixel-field-label">THOUGHT / CAPTION</Label>
+              <Textarea
+                id="memory-note"
+                value={note}
+                onChange={(event) => setNote(event.target.value)}
+                maxLength={900}
+                rows={4}
+                className="pixel-input min-h-24 resize-y"
+                placeholder="Write down the part you want to remember…"
+              />
+            </div>
+
+            {kind !== "thought" && (
+              <div className="space-y-2">
+                <Label htmlFor="memory-file" className="pixel-field-label">
+                  {kind === "photo" ? "PHOTO FILE" : "VIDEO FILE"}
+                </Label>
+                <Input
+                  key={`${kind}-${editing?.id ?? "new"}`}
+                  id="memory-file"
+                  type="file"
+                  accept={kind === "photo" ? "image/*" : "video/*"}
+                  required={!editing?.mediaPath}
+                  onChange={(event) => setFile(event.target.files?.[0] ?? null)}
+                  className="pixel-input file:mr-3 file:border-0 file:bg-secondary file:px-3 file:py-2 file:font-sans file:text-[11px] file:font-bold file:text-secondary-foreground"
+                />
+                <p className="font-sans text-[10px] leading-5 text-muted-foreground">
+                  {editing?.mediaPath ? "Choose a new file only if you want to replace this one." : "Files up to 50 MB."}
+                </p>
+              </div>
+            )}
+
+            {notice && formOpen && (
+              <p role={noticeError ? "alert" : "status"} className="pixel-notice pixel-notice-error">
+                {notice}
+              </p>
+            )}
+
+            <div className="flex flex-wrap justify-end gap-2 border-t-2 border-border pt-4">
+              <Button type="button" variant="outline" onClick={() => setFormOpen(false)} className="pixel-action">
+                Cancel
+              </Button>
+              <Button type="submit" disabled={saving || !isOwner} className="pixel-action">
+                {saving ? <Upload className="animate-pulse" /> : <Sparkles />}
+                {saving ? "Saving…" : editing ? "Save changes" : "Save memory"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={Boolean(deleting)} onOpenChange={(open) => !open && setDeleting(null)}>
+        <AlertDialogContent className="pixel-dialog border-2 border-foreground bg-card shadow-[var(--shadow-pixel)]">
+          <AlertDialogHeader className="text-left">
+            <p className="pixel-kicker text-secondary">REMOVE FROM SCRAPBOOK</p>
+            <AlertDialogTitle className="pixel-section-title">Let this one go?</AlertDialogTitle>
+            <AlertDialogDescription className="font-sans text-sm leading-6 text-muted-foreground">
+              “{deleting?.title}” and its uploaded media will be removed.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="pixel-action">Keep it</AlertDialogCancel>
+            <AlertDialogAction
+              className="pixel-action bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={(event) => {
+                event.preventDefault();
+                void handleDelete();
+              }}
+            >
+              <Trash2 aria-hidden="true" /> Remove memory
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {!authReady && <span className="sr-only" role="status">Checking owner access…</span>}
+      {isOwner && ownerEmail && <span className="sr-only">Signed in as gallery owner</span>}
+    </main>
   );
 }
 
-function FlipCard({ text, index }: { text: string; index: number }) {
-  const [flipped, setFlipped] = useState(false);
+function MemoryTile({
+  memory,
+  index,
+  isOwner,
+  onEdit,
+  onDelete,
+}: {
+  memory: MemoryCard;
+  index: number;
+  isOwner: boolean;
+  onEdit: (memory: MemoryCard) => void;
+  onDelete: (memory: MemoryCard) => void;
+}) {
+  const Icon = memory.kind === "photo" ? Camera : memory.kind === "video" ? Film : Quote;
   return (
-    <button
-      onClick={() => {
-        sfx.flip();
-        setFlipped((f) => !f);
-      }}
-
-      className="h-44 w-full [perspective:1200px]"
-      aria-label="Reveal message"
-    >
-      <div
-        className="relative h-full w-full transition-transform duration-700 [transform-style:preserve-3d]"
-        style={{ transform: flipped ? "rotateY(180deg)" : "none" }}
-      >
-        <div className="glass absolute inset-0 flex flex-col items-center justify-center rounded-3xl [backface-visibility:hidden]">
-          <span className="font-display text-4xl text-primary/70">❤</span>
-          <span className="mt-2 text-[10px] uppercase tracking-[0.3em] text-foreground/40">
-            No. {index}
-          </span>
-        </div>
-        <div
-          className="absolute inset-0 flex items-center justify-center rounded-3xl px-7 text-center [backface-visibility:hidden]"
-          style={{
-            transform: "rotateY(180deg)",
-            background: "linear-gradient(150deg, oklch(0.97 0.03 350), oklch(0.96 0.035 300))",
-            boxShadow: "var(--shadow-soft)",
-          }}
-        >
-          <p className="font-display text-xl leading-snug">{text}</p>
+    <article className={`memory-tile pixel-panel ${memory.kind === "thought" ? "memory-tile-thought" : ""}`}>
+      <div className="flex min-h-12 items-center justify-between gap-3 border-b-2 border-border px-3 py-2">
+        <span className="pixel-type inline-flex items-center gap-2">
+          <Icon aria-hidden="true" className="size-3.5" /> {memory.kind.toUpperCase()}
+        </span>
+        <div className="flex items-center gap-1">
+          <span className="pixel-index">NO. {(index + 1).toString().padStart(2, "0")}</span>
+          {isOwner && memory.editable && (
+            <>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="pixel-icon-action"
+                onClick={() => onEdit(memory)}
+                aria-label={`Edit ${memory.title}`}
+                title={`Edit ${memory.title}`}
+              >
+                <Pencil aria-hidden="true" />
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="pixel-icon-action pixel-delete-action"
+                onClick={() => onDelete(memory)}
+                aria-label={`Remove ${memory.title}`}
+                title={`Remove ${memory.title}`}
+              >
+                <Trash2 aria-hidden="true" />
+              </Button>
+            </>
+          )}
         </div>
       </div>
-    </button>
+
+      {memory.kind === "thought" ? (
+        <div className="memory-thought-body">
+          <Quote className="mb-5 size-7 text-secondary" aria-hidden="true" />
+          <p className="pixel-thought-text">“{memory.note || "A little thought, saved for later."}”</p>
+          {memory.mediaPath && !memory.mediaUrl && (
+            <p role="status" className="mt-4 font-sans text-xs text-muted-foreground">Attached media is unavailable right now.</p>
+          )}
+        </div>
+      ) : memory.kind === "video" && memory.mediaUrl ? (
+        <CleanVideo
+          src={memory.mediaUrl}
+          label={memory.title}
+          className="pixel-video-frame"
+        />
+      ) : memory.kind === "photo" && memory.mediaUrl ? (
+        <div className="pixel-image-frame">
+          <img src={memory.mediaUrl} alt={memory.title} loading="lazy" />
+        </div>
+      ) : (
+        <div className="pixel-media-missing" role="img" aria-label={`${memory.kind} preview unavailable`}>
+          <ImagePlus className="size-9" aria-hidden="true" />
+          <span>PREVIEW NOT READY</span>
+        </div>
+      )}
+
+      <div className="space-y-2 p-4">
+        <h3 className="pixel-card-title">{memory.title}</h3>
+        {memory.kind !== "thought" && memory.note && (
+          <p className="font-sans text-xs leading-6 text-muted-foreground">{memory.note}</p>
+        )}
+        <p className="pixel-card-date">
+          {memory.createdAt ? `SAVED ${formatSavedDate(memory.createdAt)}` : "FROM THE ORIGINAL SCRAPBOOK"}
+        </p>
+      </div>
+    </article>
   );
 }
 
-function Polaroid({ src, caption }: { src: string; caption: string }) {
-  return (
-    <figure className="glass rotate-[1.2deg] rounded-[26px] p-3 transition-all duration-500 hover:rotate-0 hover:-translate-y-1.5">
-      <img
-        src={src}
-        alt={caption}
-        loading="lazy"
-        className="aspect-[4/5] w-full rounded-[18px] object-cover"
-      />
-      <figcaption className="px-3 pb-2 pt-5 text-center font-script text-base text-foreground/65">
-        {caption}
-      </figcaption>
-    </figure>
-  );
-}
-
-function VideoPolaroid({
-  src,
-  title,
-  caption,
-  label,
-}: {
-  src: string;
-  title: string;
-  caption: string;
-  label: string;
-}) {
-  return (
-    <figure className="glass rotate-[-1deg] rounded-[26px] p-3 transition-transform duration-500 hover:rotate-0 hover:-translate-y-1.5">
-      <CleanVideo src={src} label={label} className="rounded-[18px]" />
-      <figcaption className="px-3 pb-3 pt-5 text-center">
-        <p className="font-display text-xl">{title}</p>
-        <p className="mt-1 text-xs text-foreground/55">{caption}</p>
-      </figcaption>
-    </figure>
-  );
+function formatSavedDate(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "JUST ADDED";
+  return new Intl.DateTimeFormat("en", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(date).toUpperCase();
 }

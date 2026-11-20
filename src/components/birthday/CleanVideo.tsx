@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Play, Pause } from "lucide-react";
 import { sfx } from "@/lib/sfx";
+import { Button } from "@/components/ui/button";
 
 /**
  * Minimal video player: always muted, no native chrome,
@@ -55,15 +56,17 @@ export function CleanVideo({
         onClick={toggle}
         className="aspect-[9/16] w-full cursor-pointer bg-foreground/5 object-cover"
       />
-      <button
+      <Button
         type="button"
         onClick={toggle}
         aria-label={playing ? `Pause ${label}` : `Play ${label}`}
         aria-pressed={playing}
-        className="absolute bottom-3 left-3 flex size-11 items-center justify-center rounded-full bg-card/80 text-primary shadow-[var(--shadow-soft)] backdrop-blur-md transition hover:scale-105 active:scale-95"
+        variant="outline"
+        size="icon"
+        className="pixel-video-toggle absolute bottom-3 left-3 z-10"
       >
         {playing ? <Pause className="size-5" /> : <Play className="size-5 translate-x-[1px]" />}
-      </button>
+      </Button>
     </div>
   );
 }
