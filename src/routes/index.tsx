@@ -95,7 +95,6 @@ function MemoryLane() {
   const queryClient = useQueryClient();
   const [filter, setFilter] = useState<FilterKind>("all");
   const [isOwner, setIsOwner] = useState(false);
-  const [ownerEmail, setOwnerEmail] = useState<string | null>(null);
   const [authReady, setAuthReady] = useState(false);
   const [authBusy, setAuthBusy] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
@@ -117,7 +116,6 @@ function MemoryLane() {
       if (!active) return;
       if (error || !data.user) {
         setIsOwner(false);
-        setOwnerEmail(null);
         setAuthReady(true);
         return;
       }
@@ -129,7 +127,6 @@ function MemoryLane() {
         .eq("role", "admin")
         .maybeSingle();
       if (!active) return;
-      setOwnerEmail(data.user.email ?? null);
       setIsOwner(!roleError && role?.role === "admin");
       setAuthReady(true);
     };
@@ -140,7 +137,6 @@ function MemoryLane() {
     } = supabase.auth.onAuthStateChange((event) => {
       if (event === "SIGNED_OUT") {
         setIsOwner(false);
-        setOwnerEmail(null);
       }
       if (event === "SIGNED_IN" || event === "SIGNED_OUT" || event === "USER_UPDATED") {
         window.setTimeout(() => void refreshIdentity(), 0);
@@ -204,8 +200,6 @@ function MemoryLane() {
   };
 
   const handleSignOut = async () => {
-    await queryClient.cancelQueries();
-    queryClient.clear();
     const { error } = await supabase.auth.signOut();
     if (error) {
       setNotice("Could not sign out just yet. Please try again.");
@@ -213,8 +207,6 @@ function MemoryLane() {
       return;
     }
     setIsOwner(false);
-    setOwnerEmail(null);
-    await queryClient.invalidateQueries({ queryKey: memoryEntriesQuery.queryKey });
   };
 
   const handleSave = async (event: FormEvent<HTMLFormElement>) => {
@@ -226,7 +218,8 @@ function MemoryLane() {
       return;
     }
 
-    const fileError = validateMemoryFile(kind, file, Boolean(editing?.mediaPath));
+    const keepsCompatibleMedia = Boolean(editing?.mediaPath && editing.kind === kind);
+    const fileError = validateMemoryFile(kind, file, keepsCompatibleMedia);
     if (fileError) {
       setNotice(fileError);
       setNoticeError(true);
@@ -317,7 +310,7 @@ function MemoryLane() {
             </span>
             <span>
               <span className="pixel-micro block text-foreground">MEMORY LANE</span>
-              <span className="mt-1 block text-[10px] text-muted-foreground">ADESewami’s scrapbook</span>
+              <span className="mt-1 block text-[10px] text-muted-foreground">ADESEWAMI’S SCRAPBOOK</span>
             </span>
           </a>
           <div className="flex items-center gap-2">
@@ -540,12 +533,14 @@ function MemoryLane() {
                   id="memory-file"
                   type="file"
                   accept={kind === "photo" ? "image/*" : "video/*"}
-                  required={!editing?.mediaPath}
+                  required={!(editing?.mediaPath && editing.kind === kind)}
                   onChange={(event) => setFile(event.target.files?.[0] ?? null)}
                   className="pixel-input file:mr-3 file:border-0 file:bg-secondary file:px-3 file:py-2 file:font-sans file:text-[11px] file:font-bold file:text-secondary-foreground"
                 />
                 <p className="font-sans text-[10px] leading-5 text-muted-foreground">
-                  {editing?.mediaPath ? "Choose a new file only if you want to replace this one." : "Files up to 50 MB."}
+                  {editing?.mediaPath && editing.kind === kind
+                    ? "Choose a new file only if you want to replace this one."
+                    : "Files up to 50 MB."}
                 </p>
               </div>
             )}
@@ -594,7 +589,6 @@ function MemoryLane() {
       </AlertDialog>
 
       {!authReady && <span className="sr-only" role="status">Checking owner access…</span>}
-      {isOwner && ownerEmail && <span className="sr-only">Signed in as gallery owner</span>}
     </main>
   );
 }

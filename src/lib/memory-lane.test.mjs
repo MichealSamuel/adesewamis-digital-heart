@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { MAX_MEMORY_FILE_SIZE, validateMemoryFile } from "./memory-lane";
+import { MAX_MEMORY_FILE_SIZE, validateMemoryFile } from "./memory-lane.ts";
 
 describe("memory upload validation", () => {
   it("accepts files up to the 50 MB storage limit", () => {
