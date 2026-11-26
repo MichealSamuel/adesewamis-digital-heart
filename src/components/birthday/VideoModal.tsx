@@ -3,9 +3,7 @@ import { X } from "lucide-react";
 import { CleanVideo } from "./CleanVideo";
 import { sfx } from "@/lib/sfx";
 
-const FUNNY_VIDEO = "/media/funny.mp4";
-
-export function VideoModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+export function VideoModal({ open, onClose, src }: { open: boolean; onClose: () => void; src: string }) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     if (open) {
@@ -47,7 +45,7 @@ export function VideoModal({ open, onClose }: { open: boolean; onClose: () => vo
           <X className="size-4" />
         </button>
         <CleanVideo
-          src={FUNNY_VIDEO}
+          src={src}
           autoPlay
           label="the surprise video"
           className="rounded-2xl"

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { MAX_MEMORY_FILE_SIZE, validateMemoryFile } from "./memory-lane.ts";
+import { loadGatedGallery } from "./memory-gate-access.ts";
 
 describe("memory upload validation", () => {
   it("accepts files up to the 50 MB storage limit", () => {
@@ -23,5 +24,26 @@ describe("memory upload validation", () => {
   it("allows thoughts without media and existing media when editing", () => {
     expect(validateMemoryFile("thought", null)).toBeNull();
     expect(validateMemoryFile("video", null, true)).toBeNull();
+  });
+});
+
+describe("private gallery access", () => {
+  it("does not load gallery entries until the shared gate is unlocked", async () => {
+    let fetchCount = 0;
+    const lockedResult = await loadGatedGallery(false, async () => {
+      fetchCount += 1;
+      return ["private memory"];
+    });
+
+    expect(lockedResult).toBeNull();
+    expect(fetchCount).toBe(0);
+
+    const unlockedResult = await loadGatedGallery(true, async () => {
+      fetchCount += 1;
+      return ["private memory"];
+    });
+
+    expect(unlockedResult).toEqual(["private memory"]);
+    expect(fetchCount).toBe(1);
   });
 });

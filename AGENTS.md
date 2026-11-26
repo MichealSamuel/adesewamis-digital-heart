@@ -10,3 +10,4 @@
 <!-- LOVABLE:END -->
 
 - Store gallery entries in the shared database and uploads in Cloud storage; enforce editing permissions with database roles and storage policies, never with client-side UI state alone.
+- Read gallery entries and create media links only through server functions after the shared password gate, so private content is not sent to locked visitors.

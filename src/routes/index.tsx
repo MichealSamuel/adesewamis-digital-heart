@@ -1,5 +1,5 @@
-import { useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useRouter } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import {
   ArrowDown,
   Camera,
@@ -38,12 +38,18 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { CleanVideo } from "@/components/birthday/CleanVideo";
+import { GameDoorway } from "@/components/memory-lane/GameDoorway";
 import { lovable } from "@/integrations/lovable";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  memoryEntriesQuery,
+  getMemoryLaneEntries,
+  getMemoryLaneStatus,
+  lockMemoryLane,
+  unlockMemoryLane,
+} from "@/lib/memory-gate.functions";
+import { loadGatedGallery } from "@/lib/memory-gate-access";
+import {
   MEMORY_BUCKET,
-  starterMemories,
   validateMemoryFile,
   type MemoryCard,
   type MemoryKind,
@@ -52,26 +58,30 @@ import {
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Adesewami’s Memory Lane — Pixel-Art Scrapbook" },
+      { title: "Memory Lane | A Two-Player Birthday Quest" },
       {
         name: "description",
-        content: "A tiny pixel-art scrapbook for Adesewami’s favourite photos, videos, and thoughts.",
+        content: "Meet two pixel-game guides, follow the birthday clues, and unlock Adesewami’s private memory gallery.",
       },
-      { property: "og:title", content: "Adesewami’s Memory Lane — Pixel-Art Scrapbook" },
+      { property: "og:title", content: "Memory Lane | A Two-Player Birthday Quest" },
       {
         property: "og:description",
-        content: "A tiny pixel-art scrapbook for Adesewami’s favourite photos, videos, and thoughts.",
+        content: "Meet two pixel-game guides, follow the birthday clues, and unlock Adesewami’s private memory gallery.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "Adesewami’s Memory Lane — Pixel-Art Scrapbook" },
+      { name: "twitter:title", content: "Memory Lane | A Two-Player Birthday Quest" },
       {
         name: "twitter:description",
-        content: "A tiny pixel-art scrapbook for Adesewami’s favourite photos, videos, and thoughts.",
+        content: "Meet two pixel-game guides, follow the birthday clues, and unlock Adesewami’s private memory gallery.",
       },
     ],
   }),
-  loader: ({ context }) => context.queryClient.ensureQueryData(memoryEntriesQuery),
+  loader: async () => {
+    const status = await getMemoryLaneStatus();
+    const gallery = await loadGatedGallery(status.unlocked, getMemoryLaneEntries);
+    return { unlocked: status.unlocked, gallery };
+  },
   component: MemoryLane,
 });
 
@@ -91,8 +101,11 @@ const kinds: { kind: MemoryKind; label: string; icon: typeof Camera }[] = [
 ];
 
 function MemoryLane() {
-  const { data: savedData } = useSuspenseQuery(memoryEntriesQuery);
-  const queryClient = useQueryClient();
+  const { unlocked, gallery } = Route.useLoaderData();
+  const router = useRouter();
+  const unlockGate = useServerFn(unlockMemoryLane);
+  const lockGate = useServerFn(lockMemoryLane);
+  const savedData = gallery ?? { entries: [] as MemoryCard[], hasError: false };
   const [filter, setFilter] = useState<FilterKind>("all");
   const [isOwner, setIsOwner] = useState(false);
   const [authReady, setAuthReady] = useState(false);
@@ -149,10 +162,8 @@ function MemoryLane() {
     };
   }, []);
 
-  const memories = useMemo(
-    () => [...savedData.entries, ...starterMemories],
-    [savedData.entries],
-  );
+  const memories = savedData.entries;
+  const featurePhoto = memories.find((memory) => memory.kind === "photo" && memory.mediaUrl) ?? null;
   const visibleMemories = useMemo(
     () => (filter === "all" ? memories : memories.filter((memory) => memory.kind === filter)),
     [filter, memories],
@@ -167,6 +178,24 @@ function MemoryLane() {
     setNotice("");
     setFormOpen(true);
   }, []);
+
+  const handleUnlock = useCallback(async (password: string) => {
+    const result = await unlockGate({ data: { password } });
+    if (!result.ok) return false;
+    await router.invalidate();
+    return true;
+  }, [router, unlockGate]);
+
+  const handleGalleryLock = async () => {
+    setNotice("");
+    try {
+      await lockGate();
+      await router.invalidate();
+    } catch {
+      setNotice("The gallery couldn’t be locked just now. Please try again.");
+      setNoticeError(true);
+    }
+  };
 
   const openEditMemory = useCallback((memory: MemoryCard) => {
     setEditing(memory);
@@ -269,7 +298,7 @@ function MemoryLane() {
       await supabase.storage.from(MEMORY_BUCKET).remove([editing.mediaPath]);
     }
 
-    await queryClient.invalidateQueries({ queryKey: memoryEntriesQuery.queryKey });
+    await router.invalidate();
     setFormOpen(false);
     setSaving(false);
     setFile(null);
@@ -294,11 +323,13 @@ function MemoryLane() {
       fileCleanupFailed = Boolean(removeError);
     }
 
-    await queryClient.invalidateQueries({ queryKey: memoryEntriesQuery.queryKey });
+    await router.invalidate();
     setDeleting(null);
     setNotice(fileCleanupFailed ? "Memory removed. Its old media file could not be cleared." : "Memory removed.");
     setNoticeError(fileCleanupFailed);
   };
+
+  if (!unlocked || !gallery) return <GameDoorway onUnlock={handleUnlock} />;
 
   return (
     <main className="min-h-screen px-4 pb-10 pt-4 text-foreground sm:px-8 sm:pt-7">
@@ -314,6 +345,15 @@ function MemoryLane() {
             </span>
           </a>
           <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => void handleGalleryLock()}
+              className="pixel-action"
+              aria-label="Lock the private gallery"
+            >
+              <LockKeyhole aria-hidden="true" /> <span>Lock gallery</span>
+            </Button>
             {isOwner ? (
               <>
                 <span className="hidden items-center gap-2 text-xs text-accent sm:inline-flex">
@@ -347,7 +387,7 @@ function MemoryLane() {
         <section id="top" className="pixel-hero pixel-panel mb-10 grid overflow-hidden lg:grid-cols-[1.05fr_0.95fr]">
           <div className="relative z-10 flex flex-col items-start justify-center p-6 sm:p-10 lg:p-12">
             <p className="pixel-kicker mb-5 inline-flex items-center gap-2 text-accent">
-              <span className="pixel-blink" aria-hidden="true">■</span> SAVE SLOT 01 / ALWAYS OPEN
+              <span className="pixel-blink" aria-hidden="true">■</span> SAVE SLOT 01 / PRIVATE WORLD
             </p>
             <h1 className="pixel-title max-w-xl text-[2rem] leading-[1.45] text-primary sm:text-5xl">
               MEMORY<br />
@@ -376,14 +416,21 @@ function MemoryLane() {
             </div>
           </div>
           <figure className="pixel-hero-art relative m-4 min-h-72 overflow-hidden sm:m-6 lg:min-h-[27rem]">
-            <img
-              src="/media/photo3.jpg"
-              alt="Adesewami smiling in a playful selfie"
-              width={720}
-              height={900}
-              fetchPriority="high"
-              className="h-full min-h-72 w-full object-cover object-center"
-            />
+            {featurePhoto?.mediaUrl ? (
+              <img
+                src={featurePhoto.mediaUrl}
+                alt={featurePhoto.title}
+                width={720}
+                height={900}
+                fetchPriority="high"
+                className="h-full min-h-72 w-full object-cover object-center"
+              />
+            ) : (
+              <div className="pixel-media-missing h-full min-h-72" role="img" aria-label="No featured photo is available">
+                <ImagePlus className="size-9" aria-hidden="true" />
+                <span>NO PHOTO LOADED</span>
+              </div>
+            )}
             <div className="pixel-photo-overlay" aria-hidden="true" />
             <figcaption className="pixel-photo-caption">
               <span className="pixel-micro">PLAYER ONE</span>

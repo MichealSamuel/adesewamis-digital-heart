@@ -52,15 +52,20 @@ export function GameDoorway({
     sfx.tap();
     setBusy(true);
     setFeedback("");
-    const unlocked = await onUnlock(password);
-    setBusy(false);
-    if (unlocked) {
+    try {
+      const unlocked = await onUnlock(password);
+      if (unlocked) {
+        setPassword("");
+        sfx.sparkle();
+        return;
+      }
       setPassword("");
-      sfx.sparkle();
-      return;
+      setFeedback("Not quite, Player Two. The birthday clues are still waiting for you.");
+    } catch {
+      setFeedback("The gate couldn’t check that just now. Please try again.");
+    } finally {
+      setBusy(false);
     }
-    setPassword("");
-    setFeedback("Not quite, Player Two. The birthday clues are still waiting for you.");
   }
 
   return (
@@ -158,7 +163,7 @@ export function GameDoorway({
               <Label htmlFor="memory-password" className="pixel-field-label">SECRET PHRASE</Label>
               <Input
                 id="memory-password"
-                type="text"
+                type="password"
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
                 className="pixel-input mt-2"

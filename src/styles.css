@@ -400,6 +400,270 @@
   background: color-mix(in oklab, var(--destructive) 12%, var(--card));
 }
 
+.memory-doorway {
+  background-image: linear-gradient(180deg, color-mix(in oklab, var(--secondary) 8%, transparent), transparent 42%);
+}
+
+.memory-doorway-shell {
+  max-width: 58rem;
+}
+
+.memory-doorway-mark {
+  display: grid;
+  width: 2.5rem;
+  height: 2.5rem;
+  place-items: center;
+  border: 2px solid var(--foreground);
+  color: var(--primary);
+  box-shadow: 3px 3px 0 var(--secondary);
+}
+
+.memory-doorway-title {
+  font-family: var(--font-display);
+  font-size: 1.55rem;
+  font-weight: 400;
+  line-height: 1.6;
+  color: var(--primary);
+  overflow-wrap: anywhere;
+}
+
+.memory-game-frame {
+  overflow: hidden;
+  border: 3px solid var(--foreground);
+  background: var(--card);
+  box-shadow: var(--shadow-pixel);
+}
+
+.memory-game-stage {
+  position: relative;
+  isolation: isolate;
+  height: 18rem;
+  overflow: hidden;
+  background: linear-gradient(180deg, color-mix(in oklab, var(--background) 78%, var(--primary)), var(--background));
+}
+
+.memory-stage-star {
+  position: absolute;
+  z-index: 1;
+  width: 1rem;
+  height: 1rem;
+  color: var(--primary);
+  animation: pixel-twinkle 1.8s steps(2, jump-none) infinite;
+}
+
+.memory-stage-star-one { top: 18%; left: 14%; }
+.memory-stage-star-two { top: 29%; right: 19%; width: 0.75rem; height: 0.75rem; animation-delay: 300ms; }
+.memory-stage-star-three { top: 12%; left: 58%; width: 0.625rem; height: 0.625rem; animation-delay: 600ms; }
+
+.memory-pixel-moon {
+  position: absolute;
+  top: 16%;
+  right: 12%;
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 5px solid var(--foreground);
+  background: var(--primary);
+  box-shadow: 8px 0 0 -3px var(--foreground), 0 8px 0 -3px var(--foreground);
+}
+
+.memory-stage-world {
+  position: absolute;
+  right: 0;
+  bottom: 1rem;
+  left: 0;
+  height: 48%;
+}
+
+.memory-stage-hill {
+  position: absolute;
+  bottom: 0;
+  display: block;
+  clip-path: polygon(0 100%, 0 50%, 18% 50%, 18% 25%, 44% 25%, 44% 0, 70% 0, 70% 30%, 87% 30%, 87% 58%, 100% 58%, 100% 100%);
+}
+
+.memory-stage-hill-back {
+  left: -8%;
+  width: 66%;
+  height: 78%;
+  background: color-mix(in oklab, var(--secondary) 68%, var(--background));
+}
+
+.memory-stage-hill-front {
+  right: -8%;
+  width: 67%;
+  height: 93%;
+  background: color-mix(in oklab, var(--accent) 54%, var(--background));
+}
+
+.memory-stage-path {
+  position: absolute;
+  bottom: 0;
+  left: 43%;
+  width: 20%;
+  height: 78%;
+  background: color-mix(in oklab, var(--primary) 24%, var(--background));
+  clip-path: polygon(42% 0, 58% 0, 100% 100%, 0 100%);
+}
+
+.memory-players {
+  position: absolute;
+  z-index: 3;
+  right: 8%;
+  bottom: 0.55rem;
+  left: 8%;
+  display: flex;
+  align-items: end;
+  justify-content: space-around;
+  gap: 1rem;
+}
+
+.memory-player-slot {
+  display: flex;
+  min-width: 7rem;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.memory-player-sprite {
+  width: 4.5rem;
+  height: auto;
+  image-rendering: pixelated;
+  filter: drop-shadow(3px 3px 0 color-mix(in oklab, var(--background) 75%, transparent));
+}
+
+.sprite-shadow { fill: var(--background); }
+.sprite-skin { fill: var(--primary); }
+.sprite-hair { fill: var(--foreground); }
+.sprite-eye, .sprite-mouth { fill: var(--background); }
+.sprite-shirt-boy { fill: var(--accent); }
+.sprite-shirt-girl { fill: var(--secondary); }
+.sprite-shorts { fill: var(--muted-foreground); }
+.sprite-skirt { fill: var(--secondary); }
+.sprite-shoe { fill: var(--foreground); }
+
+.memory-talk-button {
+  min-height: 2.25rem;
+  padding-inline: 0.55rem;
+  font-size: 0.62rem;
+}
+
+.memory-stage-ground {
+  position: absolute;
+  z-index: 4;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 0.9rem;
+  border-top: 3px solid var(--foreground);
+  background: var(--primary);
+}
+
+.memory-dialogue {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  align-items: start;
+  gap: 0.75rem;
+  min-height: 4.5rem;
+  border-top: 3px solid var(--foreground);
+  padding: 0.9rem 1rem;
+  background: var(--card);
+}
+
+.memory-dialogue-speaker {
+  padding-top: 0.15rem;
+  color: var(--accent);
+  font-family: var(--font-display);
+  font-size: 0.55rem;
+  line-height: 1.8;
+}
+
+.memory-dialogue p {
+  margin: 0;
+  color: var(--foreground);
+  font-size: 0.75rem;
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+}
+
+.memory-gate-panel {
+  border: 3px solid var(--foreground);
+  padding: 1rem;
+  background: var(--card);
+  box-shadow: var(--shadow-pixel);
+}
+
+.memory-clue-list {
+  display: grid;
+  gap: 0.5rem;
+  margin-block: 1rem;
+  border-block: 2px dashed var(--border);
+  padding-block: 0.85rem;
+}
+
+.memory-clue {
+  display: flex;
+  align-items: baseline;
+  gap: 0.65rem;
+  color: var(--muted-foreground);
+  font-size: 0.72rem;
+  line-height: 1.7;
+}
+
+.memory-clue span {
+  color: var(--muted-foreground);
+  font-size: 0.9rem;
+}
+
+.memory-clue-found,
+.memory-clue-found span {
+  color: var(--accent);
+}
+
+.memory-gate-form {
+  display: flex;
+  align-items: end;
+  gap: 0.75rem;
+}
+
+.pixel-input:focus-visible,
+.pixel-action:focus-visible,
+.memory-talk-button:focus-visible {
+  outline: 3px solid var(--ring);
+  outline-offset: 3px;
+}
+
+.memory-unlock-button {
+  min-width: 8rem;
+}
+
+.memory-gate-feedback {
+  margin-top: 0.75rem;
+  color: var(--muted-foreground);
+  font-size: 0.7rem;
+  line-height: 1.7;
+}
+
+@keyframes pixel-twinkle {
+  0%, 48% { opacity: 1; }
+  50%, 100% { opacity: 0.3; }
+}
+
+@media (min-width: 640px) {
+  .memory-doorway-title { font-size: 2.25rem; }
+  .memory-game-stage { height: 22rem; }
+  .memory-gate-panel { padding: 1.5rem; }
+  .memory-player-sprite { width: 5.4rem; }
+}
+
+@media (max-width: 480px) {
+  .memory-doorway-shell { gap: 1rem; }
+  .memory-dialogue { grid-template-columns: 1fr; gap: 0.2rem; }
+  .memory-gate-form { align-items: stretch; flex-direction: column; }
+  .memory-unlock-button { width: 100%; }
+  .memory-talk-button { font-size: 0.55rem; }
+}
+
 @keyframes pixel-blink {
   0%,
   48% {
@@ -420,4 +684,6 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+
+  .memory-stage-star { animation: none; }
 }
